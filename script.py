@@ -31,7 +31,6 @@ class SheetDB():
         client = gspread.authorize(creds)
         self.sheet = client.open("weekly_distance_log").get_worksheet(0)
         self.excess_sheet = client.open("weekly_distance_log").get_worksheet(1)
-        self.datetime = DateTime()
     
     def getAllRecords(self, sheet):
         data = sheet.get_all_records()
@@ -114,7 +113,7 @@ def distance_request(message):
 @bot.message_handler(func=distance_request)
 def distanceReply(message):
     name = message.from_user.first_name
-    bot.send_message(message.chat.id, "Good job on your run {}!".format(name))
+    bot.send_message(message.chat.id, "Nice one {} ! 💪".format(name))
     distance = message.text.split()[1]
     prevProgressMap = sheetdb.getWeeklyStats()
     prevWeeklyExcessStatusAboveLimit = True if prevProgressMap[name] > 10 else False
@@ -127,7 +126,9 @@ def distanceReply(message):
     if currProgressMap[name] > 10:
         if prevWeeklyExcessStatusAboveLimit:
             currExcess = currProgressMap[name] - prevProgressMap[name]
-        else: currExcess = currProgressMap[name] - 10
+        else: 
+            currExcess = currProgressMap[name] - 10
+            bot.send_message(message.chat.id, "Congrats on achieving your weekly target {} !!! 🥳".format(name))
         currProgressMap[name] = 10
 
     if currExcess>0:
@@ -147,7 +148,7 @@ def excess_request(message):
 @bot.message_handler(func=excess_request)
 def distanceReply(message):
     name = message.from_user.first_name
-    reply = "You have already reached your target goal of 10 km!"
+    reply = "You have already reached your weekly target {} ! 😎".format(name)
 
     progressMap = sheetdb.getWeeklyStats()
     if progressMap[name] < 10:
@@ -155,11 +156,11 @@ def distanceReply(message):
         scaledExcess = requiredDistance*EXCESS_FACTOR
         excessMap = sheetdb.getWeeklyExcessStats()
         if excessMap[name] < scaledExcess:
-            reply = "You have not accumulated sufficient excess mileage!"
+            reply = "You have not accumulated sufficient excess mileage {} ! 😭".format(name)
         else:
             sheetdb.insertRecord(name,requiredDistance)
             sheetdb.updateExcess(name,-1*scaledExcess)
-            reply = "You have successfully redeemed your excess mileage to reach your target!"
+            reply = "You have successfully redeemed your excess mileage {} ! 👌".format(name)
 
     bot.send_message(message.chat.id, reply)
 
@@ -168,8 +169,9 @@ def distanceReply(message):
     progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
     bot.send_message(message.chat.id, progressReply)
 
-# def manualUpdate
+# def manualUpdate - delete all the rows in this week for that user and update with manual entry
 # def commands (all the commands)
+# not able to detect text below attached image
 
 @bot.message_handler(commands=['hello','hey'])
 def greet(message):
