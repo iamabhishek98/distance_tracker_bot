@@ -11,6 +11,7 @@ load_dotenv()
 API_KEY = os.getenv('API_KEY')
 bot = telebot.TeleBot(API_KEY)
 
+EXCESS_FACTOR = 4
 names = ["Abhishek", "Pradeep", "Priyan", "Sukrut"]
 excessDistanceMap = {
     "Abhishek": [2,2],
@@ -88,14 +89,16 @@ class SheetDB():
         print (progressReply)
         return progressReply
 
+    def roundDown(self,progressMap):
+        for i in progressMap:
+            if progressMap[i] > 10: progressMap[i] = 10
+        return progressMap
 
 sheetdb = SheetDB()
     
 @bot.message_handler(commands=['progress'])
 def progress(message):
-    progressMap = sheetdb.getWeeklyStats()
-    for i in progressMap:
-        if progressMap[i] > 10: progressMap[i] = 10
+    progressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
     excessMap = sheetdb.getWeeklyExcessStats()
     progressReply = sheetdb.getWeeklyStatsReply(progressMap, excessMap)
     bot.send_message(message.chat.id, progressReply)
@@ -134,6 +137,39 @@ def distanceReply(message):
     progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
     
     bot.send_message(message.chat.id, progressReply)
+
+def excess_request(message):
+    if message.text and message.text == "/useexcess":
+        print('Valid use excess request!')
+        return True
+    return False
+
+@bot.message_handler(func=excess_request)
+def distanceReply(message):
+    name = message.from_user.first_name
+    reply = "You have already reached your target goal of 10 km!"
+
+    progressMap = sheetdb.getWeeklyStats()
+    if progressMap[name] < 10:
+        requiredDistance = 10-progressMap[name]
+        scaledExcess = requiredDistance*EXCESS_FACTOR
+        excessMap = sheetdb.getWeeklyExcessStats()
+        if excessMap[name] < scaledExcess:
+            reply = "You have not accumulated sufficient excess mileage!"
+        else:
+            sheetdb.insertRecord(name,requiredDistance)
+            sheetdb.updateExcess(name,-1*scaledExcess)
+            reply = "You have successfully redeemed your excess mileage to reach your target!"
+
+    bot.send_message(message.chat.id, reply)
+
+    currProgressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
+    excessMap = sheetdb.getWeeklyExcessStats()
+    progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
+    bot.send_message(message.chat.id, progressReply)
+
+# def manualUpdate
+# def commands (all the commands)
 
 @bot.message_handler(commands=['hello','hey'])
 def greet(message):
