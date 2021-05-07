@@ -6,9 +6,23 @@ from pprint import pprint
 from time import time, strptime
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
+GOOGLE_APP_CREDS = {
+    "type": os.getenv("type"),
+    "project_id": os.getenv("project_id"),
+    "private_key_id": os.getenv("private_key_id"),
+    "private_key": os.getenv("private_key"),
+    "client_email": os.getenv("client_email"),
+    "client_id": os.getenv("client_id"),
+    "auth_uri": os.getenv("auth_uri"),
+    "token_uri": os.getenv("token_uri"),
+    "auth_provider_x509_cert_url": os.getenv("auth_provider_x509_cert_url"),
+    "client_x509_cert_url": os.getenv("client_x509_cert_url")
+}
+
 bot = telebot.TeleBot(API_KEY)
 
 EXCESS_FACTOR = 4
@@ -27,7 +41,7 @@ class DateTime:
 class SheetDB():
     def __init__(self):
         scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(GOOGLE_APP_CREDS)
         client = gspread.authorize(creds)
         self.sheet = client.open("weekly_distance_log").get_worksheet(0)
         self.excess_sheet = client.open("weekly_distance_log").get_worksheet(1)
@@ -103,6 +117,9 @@ def progress(message):
 
 def distance_request(message):
     if message.text:
+        if message.text == "/log":
+            bot.send_message(message.chat.id, "Enter distance followed by /log\nFor e.g. /log 4.5")
+            return False
         request = message.text.split()
         if len(request)>=2 and request[0] == "/log" and request[1].replace('.','',1).isdigit() and float(request[1])>0:
             print('Valid distance update request!')
