@@ -22,6 +22,7 @@ GOOGLE_APP_CREDS = {
     "auth_provider_x509_cert_url": os.getenv("auth_provider_x509_cert_url"),
     "client_x509_cert_url": os.getenv("client_x509_cert_url")
 }
+GOOGLE_APP_CREDS['private_key'] = GOOGLE_APP_CREDS['private_key'].replace('\\n', '\n')
 
 bot = telebot.TeleBot(API_KEY)
 server = Flask(__name__)
@@ -106,8 +107,6 @@ class SheetDB():
         for i in progressMap:
             if progressMap[i] > 10: progressMap[i] = 10
         return progressMap
-
-sheetdb = SheetDB()
     
 @bot.message_handler(commands=['progress'])
 def progress(message):
@@ -118,7 +117,7 @@ def progress(message):
 
 def distance_request(message):
     if message.text:
-        if message.text == "/log":
+        if message.text in ["/log","/log@weekly_distance_tracker_bot"]:
             bot.send_message(message.chat.id, "Enter distance followed by /log\nFor e.g. /log 4.5")
             return False
         request = message.text.split()
@@ -162,7 +161,7 @@ def excess_request(message):
         return True
     return False
 
-@bot.message_handler(func=excess_request)
+@bot.message_handler(commands=['redeem'])
 def distanceReply(message):
     name = message.from_user.first_name
     reply = "You have already reached your weekly target {} ! 😎".format(name)
@@ -186,7 +185,7 @@ def distanceReply(message):
     progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
     bot.send_message(message.chat.id, progressReply)
 
-@server.route('/' + TOKEN, methods=['POST'])
+@server.route('/' + API_KEY, methods=['POST'])
 def getMessage():
     bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
     return "!", 200
@@ -197,6 +196,6 @@ def webhook():
     bot.set_webhook(url='https://weekly-distance-tracker-bot.herokuapp.com/' + API_KEY)
     return "!", 200
 
-
 if __name__ == "__main__":
+    sheetdb = SheetDB()
     server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
