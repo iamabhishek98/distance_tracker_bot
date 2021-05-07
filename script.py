@@ -6,6 +6,7 @@ from pprint import pprint
 from time import time, strptime
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
+from flask import Flask, request
 
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
@@ -23,6 +24,7 @@ GOOGLE_APP_CREDS = {
 }
 
 bot = telebot.TeleBot(API_KEY)
+server = Flask(__name__)
 
 EXCESS_FACTOR = 4
 names = ["Abhishek", "Pradeep", "Priyan", "Sukrut"]
@@ -184,4 +186,17 @@ def distanceReply(message):
     progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
     bot.send_message(message.chat.id, progressReply)
 
-bot.polling()
+@server.route('/' + TOKEN, methods=['POST'])
+def getMessage():
+    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    return "!", 200
+
+@server.route("/")
+def webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url='https://weekly-distance-tracker-bot.herokuapp.com/' + API_KEY)
+    return "!", 200
+
+
+if __name__ == "__main__":
+    server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
