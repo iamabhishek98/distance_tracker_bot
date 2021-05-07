@@ -34,7 +34,6 @@ class SheetDB():
     
     def getAllRecords(self, sheet):
         data = sheet.get_all_records()
-        # pprint(data)
         return data
 
     def insertRecord(self, name, distance):
@@ -105,7 +104,7 @@ def progress(message):
 def distance_request(message):
     if message.text:
         request = message.text.split()
-        if len(request)>=2 and request[0] == "/distance" and request[1].replace('.','',1).isdigit() and float(request[1])>0:
+        if len(request)>=2 and request[0] == "/log" and request[1].replace('.','',1).isdigit() and float(request[1])>0:
             print('Valid distance update request!')
             return True
     return False
@@ -140,8 +139,8 @@ def distanceReply(message):
     bot.send_message(message.chat.id, progressReply)
 
 def excess_request(message):
-    if message.text and message.text == "/useexcess":
-        print('Valid use excess request!')
+    if message.text and message.text == "/redeem":
+        print('Valid redeem request!')
         return True
     return False
 
@@ -168,16 +167,5 @@ def distanceReply(message):
     excessMap = sheetdb.getWeeklyExcessStats()
     progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
     bot.send_message(message.chat.id, progressReply)
-
-# def manualUpdate - delete all the rows in this week for that user and update with manual entry
-# def commands (all the commands)
-# not able to detect text below attached image
-
-@bot.message_handler(commands=['hello','hey'])
-def greet(message):
-    bot.send_message(message.chat.id, "Hey!")
-    markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
-    markup.add('Male', 'Female')
-    bot.send_message(message.chat.id, str("Hi! Which one do you want? choose from the below keyboard buttons."), reply_markup=markup)
 
 bot.polling()
