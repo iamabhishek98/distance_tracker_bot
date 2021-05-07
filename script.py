@@ -6,7 +6,6 @@ from pprint import pprint
 from time import time, strptime
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
-import json
 
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
