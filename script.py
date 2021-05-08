@@ -56,7 +56,7 @@ class SheetDB():
         curr_date = str(date.today())
         row = [curr_date, name, distance]
         self.sheet.insert_row(row, 2)
-        print('Record Inserted')
+        print('Record Inserted!')
 
     def updateExcess(self, name, excess):
         global excessDistanceMap
@@ -65,11 +65,23 @@ class SheetDB():
         curr_value = self.excess_sheet.cell(row,col).value
         updated_value = round(float(curr_value)+excess,2)
         self.excess_sheet.update_cell(row,col,updated_value)
-        print('Excess Updated')
+        print('Excess Updated!')
+
+    def changeExcess(self, name, excess):
+        global excessDistanceMap
+        row = excessDistanceMap[name][0]
+        col = excessDistanceMap[name][1]
+        self.excess_sheet.update_cell(row,col,excess)
+        print('Excess Changed!')
 
     def deleteLastRecord(self):
-        self.sheet.delete_rows(2)
+        self.sheet.delete_row(2)
         print('Record Deleted!')
+
+    def deleteMultipleRecords(self, indexes):
+        for i in indexes[::-1]:
+            self.sheet.delete_row(i+2)
+        print ('Records Deleted!')
 
     def filterWeeklyRecords(self):
         data = self.getAllRecords(self.sheet)
@@ -78,6 +90,17 @@ class SheetDB():
         lastMonday = timestampDate - timedelta(days=timestampDate.weekday())
         filtered =  list(filter(lambda x: DateTime.getDateObj(x['Date']) >= lastMonday, data))
         return filtered
+
+    def getWeeklyIndexesByName(self, name):
+        data = self.getAllRecords(self.sheet)
+        currDate = str(date.today())
+        timestampDate = DateTime.getDateObj(currDate)
+        lastMonday = timestampDate - timedelta(days=timestampDate.weekday())
+        indexArr = []
+        for i, x in enumerate(data):
+            if x['Name'] == name and DateTime.getDateObj(x['Date']) >= lastMonday:
+                indexArr.append(i)
+        return indexArr
     
     def getWeeklyStats(self):
         records = self.filterWeeklyRecords()
@@ -118,7 +141,7 @@ def progress(message):
 def distance_request(message):
     if message.text:
         if message.text in ["/log","/log@weekly_distance_tracker_bot"]:
-            bot.send_message(message.chat.id, "Enter distance followed by /log\nFor e.g. /log 4.5")
+            bot.send_message(message.chat.id, "Enter distance followed by /log.\nFor e.g. /log 4.5")
             return False
         request = message.text.split()
         if len(request)>=2 and request[0] == "/log" and request[1].replace('.','',1).isdigit() and float(request[1])>0:
@@ -132,7 +155,7 @@ def distanceReply(message):
     bot.send_message(message.chat.id, "Nice one {} ! 💪".format(name))
     distance = message.text.split()[1]
     prevProgressMap = sheetdb.getWeeklyStats()
-    prevWeeklyExcessStatusAboveLimit = True if prevProgressMap[name] > 10 else False
+    prevWeeklyExcessStatusAboveLimit = True if prevProgressMap[name] >= 10 else False
     
     sheetdb.insertRecord(name,distance)
     
@@ -184,6 +207,39 @@ def distanceReply(message):
     excessMap = sheetdb.getWeeklyExcessStats()
     progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
     bot.send_message(message.chat.id, progressReply)
+
+def manual_request(message):
+    if message.text:
+        if message.text in ["/manual","/manual@weekly_distance_tracker_bot"]:
+            bot.send_message(message.chat.id, "Enter weekly and excess mileage\nfollowed by /manual.\nFor e.g. /manual 9.5 13.2")
+            return False
+        request = message.text.split()
+        if len(request)>=3 and request[0] == "/manual" and request[1].replace('.','',1).isdigit() and float(request[1])>0 and request[2].replace('.','',1).isdigit() and float(request[2])>0:
+            print('Valid manual update request!')
+            return True
+    return False
+
+@bot.message_handler(func=manual_request)
+def manualReply(message):
+    name = message.from_user.first_name
+    bot.send_message(message.chat.id, '🚧 Manual update for {} in progress...'.format(name))
+
+    # delete weekly records
+    weeklyIndexes = sheetdb.getWeeklyIndexesByName(name)
+    sheetdb.deleteMultipleRecords(weeklyIndexes)
+
+    # insert new record and update excess
+    req = message.text.split()
+    distance = req[1]
+    excess = float(req[2])
+    if float(distance) > 0: sheetdb.insertRecord(name, distance)
+    if excess > 0: sheetdb.changeExcess(name, excess)
+
+    # return weekly progress
+    progressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
+    excessMap = sheetdb.getWeeklyExcessStats()
+    progressReply = sheetdb.getWeeklyStatsReply(progressMap, excessMap)
+    bot.send_message(message.chat.id, progressReply)    
 
 @server.route('/' + API_KEY, methods=['POST'])
 def getMessage():
