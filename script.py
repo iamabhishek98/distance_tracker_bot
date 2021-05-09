@@ -1,12 +1,14 @@
 import gspread
 import telebot
 import os
+import prettytable as pt
 from oauth2client.service_account import ServiceAccountCredentials
 from pprint import pprint
 from time import time, strptime
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 from flask import Flask, request
+from telegram import ParseMode
 
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
@@ -120,23 +122,34 @@ class SheetDB():
         return excessMap
     
     def getWeeklyStatsReply(self, progressMap, excessMap):
-        progressReply = "***Weekly Progress***\n"
+        table = pt.PrettyTable(['Name', 'Mileage', 'Excess'])
+        table.align['Name'] = 'l'
+        table.align['Mileage'] = 'r'
+        table.align['Excess'] = 'r'
         for name in progressMap:
-            progressReply += (f"    {name} : {round(progressMap[name],2)}/{excessMap[name]}\n")
-        print (progressReply)
-        return progressReply
+            table.add_row([name, f'{progressMap[name]:.2f}', f'{excessMap[name]:.3f}'])
+        return table
+        # progressReply = "***Weekly Progress***\n"
+        # for name in progressMap:
+        #     progressReply += (f"    {name} : {round(progressMap[name],2)}/{excessMap[name]}\n")
+
+        # print (progressReply)
+        # return progressReply
 
     def roundDown(self,progressMap):
         for i in progressMap:
             if progressMap[i] > 10: progressMap[i] = 10
         return progressMap
-    
+
+def sendWeeklyProgress(message, progressMap, excessMap):
+    progressReply = sheetdb.getWeeklyStatsReply(progressMap, excessMap)
+    bot.send_message(message.chat.id, f'<pre>{progressReply}</pre>', parse_mode=ParseMode.HTML)
+
 @bot.message_handler(commands=['progress'])
 def progress(message):
     progressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
     excessMap = sheetdb.getWeeklyExcessStats()
-    progressReply = sheetdb.getWeeklyStatsReply(progressMap, excessMap)
-    bot.send_message(message.chat.id, progressReply)
+    sendWeeklyProgress(message, progressMap, excessMap)
 
 def distance_request(message):
     if message.text:
@@ -174,9 +187,7 @@ def distanceReply(message):
         sheetdb.updateExcess(name,currExcess)
 
     excessMap = sheetdb.getWeeklyExcessStats()
-    progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
-    
-    bot.send_message(message.chat.id, progressReply)
+    sendWeeklyProgress(message, currProgressMap, excessMap)
 
 def excess_request(message):
     if message.text and message.text == "/redeem":
@@ -205,8 +216,7 @@ def distanceReply(message):
 
     currProgressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
     excessMap = sheetdb.getWeeklyExcessStats()
-    progressReply = sheetdb.getWeeklyStatsReply(currProgressMap, excessMap)
-    bot.send_message(message.chat.id, progressReply)
+    sendWeeklyProgress(message, currProgressMap, excessMap)
 
 def manual_request(message):
     if message.text:
@@ -238,8 +248,7 @@ def manualReply(message):
     # return weekly progress
     progressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
     excessMap = sheetdb.getWeeklyExcessStats()
-    progressReply = sheetdb.getWeeklyStatsReply(progressMap, excessMap)
-    bot.send_message(message.chat.id, progressReply)    
+    sendWeeklyProgress(message, progressMap, excessMap)
 
 @server.route('/' + API_KEY, methods=['POST'])
 def getMessage():
