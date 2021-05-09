@@ -127,14 +127,9 @@ class SheetDB():
         table.align['Mileage'] = 'r'
         table.align['Excess'] = 'r'
         for name in progressMap:
-            table.add_row([name, f'{progressMap[name]:.2f}', f'{excessMap[name]:.3f}'])
+            table.add_row([name, f'{progressMap[name]:.2f}', f'{excessMap[name]:.2f}'])
+        print(table)
         return table
-        # progressReply = "***Weekly Progress***\n"
-        # for name in progressMap:
-        #     progressReply += (f"    {name} : {round(progressMap[name],2)}/{excessMap[name]}\n")
-
-        # print (progressReply)
-        # return progressReply
 
     def roundDown(self,progressMap):
         for i in progressMap:
