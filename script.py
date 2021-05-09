@@ -124,10 +124,10 @@ class SheetDB():
     def getWeeklyStatsReply(self, progressMap, excessMap):
         table = pt.PrettyTable()
         table.title = "Weekly Progress Status"
-        table.field_names = (['Name', 'Mileage', 'Excess'])
+        table.field_names = (['Name', 'Mil.', 'Ex.'])
         table.align['Name'] = 'l'
-        table.align['Mileage'] = 'r'
-        table.align['Excess'] = 'r'
+        table.align['Mil.'] = 'r'
+        table.align['Ex.'] = 'r'
         for name in progressMap:
             table.add_row([name, f'{progressMap[name]:.2f}', f'{excessMap[name]:.2f}'])
         print(table)
