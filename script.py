@@ -144,14 +144,14 @@ def sendWeeklyProgress(message, progressMap, excessMap):
 
 @bot.message_handler(commands=['progress'])
 def progress(message):
-    progressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
+    progressMap = sheetdb.getWeeklyStats()
     excessMap = sheetdb.getWeeklyExcessStats()
     sendWeeklyProgress(message, progressMap, excessMap)
 
 def distance_request(message):
     if message.text:
         if message.text in ["/log","/log@weekly_distance_tracker_bot"]:
-            bot.send_message(message.chat.id, "Enter distance followed by /log.\nFor e.g. /log 4.5")
+            bot.send_message(message.chat.id, "Enter distance following /log.\nFor e.g. /log 4.5")
             return False
         request = message.text.split()
         if len(request)>=2 and request[0] == "/log" and request[1].replace('.','',1).isdigit() and float(request[1])>0:
@@ -211,14 +211,14 @@ def distanceReply(message):
 
     bot.send_message(message.chat.id, reply)
 
-    currProgressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
+    currProgressMap = sheetdb.getWeeklyStats()
     excessMap = sheetdb.getWeeklyExcessStats()
     sendWeeklyProgress(message, currProgressMap, excessMap)
 
 def manual_request(message):
     if message.text:
         if message.text in ["/manual","/manual@weekly_distance_tracker_bot"]:
-            bot.send_message(message.chat.id, "Enter weekly and excess mileage\nfollowed by /manual.\nFor e.g. /manual 9.5 13.2")
+            bot.send_message(message.chat.id, "Enter weekly and excess mileage\nfollowing /manual.\nFor e.g. /manual 9.5 13.2")
             return False
         request = message.text.split()
         if len(request)>=3 and request[0] == "/manual" and request[1].replace('.','',1).isdigit() and float(request[1])>0 and request[2].replace('.','',1).isdigit() and float(request[2])>0:
@@ -243,7 +243,7 @@ def manualReply(message):
     if excess > 0: sheetdb.changeExcess(name, excess)
 
     # return weekly progress
-    progressMap = sheetdb.roundDown(sheetdb.getWeeklyStats())
+    progressMap = sheetdb.getWeeklyStats()
     excessMap = sheetdb.getWeeklyExcessStats()
     sendWeeklyProgress(message, progressMap, excessMap)
 
