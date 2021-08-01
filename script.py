@@ -179,7 +179,6 @@ def distanceReply(message):
         else: 
             currExcess = currProgressMap[name] - 10
             bot.send_message(message.chat.id, "Congrats on achieving your weekly target {} !!! 🥳".format(name))
-        currProgressMap[name] = 10
 
     if currExcess>0:
         sheetdb.updateExcess(name,currExcess)
