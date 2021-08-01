@@ -128,8 +128,9 @@ class SheetDB():
         table.align['Name'] = 'l'
         table.align['Mil.'] = 'r'
         table.align['Ex.'] = 'r'
-        for name in progressMap:
-            table.add_row([name, f'{progressMap[name]:.2f}', f'{excessMap[name]:.2f}'])
+        sortedProgressMap = {k: v for k, v in sorted(progressMap.items(), key=lambda item: -item[1])}
+        for name in sortedProgressMap:
+            table.add_row([name, f'{sortedProgressMap[name]:.2f}', f'{excessMap[name]:.2f}'])
         print(table)
         return table
 
