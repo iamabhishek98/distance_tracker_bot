@@ -30,11 +30,11 @@ bot = telebot.TeleBot(API_KEY)
 server = Flask(__name__)
 
 EXCESS_FACTOR = 4
-names = ["Abhishek", "Pradeep", "Priyan", "Sukrut"]
+names = ["Abhishek", "Pradeep", "Rj", "Sukrut"]
 excessDistanceMap = {
     "Abhishek": [2,2],
     "Pradeep": [3,2],
-    "Priyan": [4,2],
+    "Rj": [4,2],
     "Sukrut": [5,2]
 }
 
