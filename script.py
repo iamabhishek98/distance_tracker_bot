@@ -31,12 +31,13 @@ bot = telebot.TeleBot(API_KEY)
 server = Flask(__name__)
 
 EXCESS_FACTOR = 4
-names = ["Abhishek", "Pradeep", "Rj", "Sukrut"]
+names = ["Abhishek", "Pradeep", "Priyan", "Sukrut", "Shantanu"]
 excessDistanceMap = {
     "Abhishek": [2, 2],
     "Pradeep": [3, 2],
-    "Rj": [4, 2],
-    "Sukrut": [5, 2]
+    "Priyan": [4, 2],
+    "Sukrut": [5, 2],
+    "Shantanu": [6, 2]
 }
 usernameMap = {
     os.getenv("abhishek_username"): "Abhishek",
@@ -184,7 +185,7 @@ def distance_request(message):
 
 @bot.message_handler(func=distance_request)
 def distanceReply(message):
-    name = message.from_user.first_name
+    name = usernameMap[message.from_user.username]
     bot.send_message(message.chat.id, "Nice one {} ! 💪".format(name))
     distance = message.text.split()[1]
     prevProgressMap = sheetdb.getWeeklyStats()
@@ -219,7 +220,7 @@ def excess_request(message):
 
 @bot.message_handler(commands=['redeem'])
 def distanceReply(message):
-    name = message.from_user.first_name
+    name = usernameMap[message.from_user.username]
     reply = "You have already reached your weekly target {} ! 😎".format(name)
 
     progressMap = sheetdb.getWeeklyStats()
@@ -258,7 +259,7 @@ def manual_request(message):
 
 @bot.message_handler(func=manual_request)
 def manualReply(message):
-    name = message.from_user.first_name
+    name = usernameMap[message.from_user.username]
     bot.send_message(
         message.chat.id, '🚧 Manual update for {} in progress...'.format(name))
 
