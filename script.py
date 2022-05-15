@@ -24,7 +24,8 @@ GOOGLE_APP_CREDS = {
     "auth_provider_x509_cert_url": os.getenv("auth_provider_x509_cert_url"),
     "client_x509_cert_url": os.getenv("client_x509_cert_url")
 }
-GOOGLE_APP_CREDS['private_key'] = GOOGLE_APP_CREDS['private_key'].replace('\\n', '\n')
+GOOGLE_APP_CREDS['private_key'] = GOOGLE_APP_CREDS['private_key'].replace(
+    '\\n', '\n')
 
 bot = telebot.TeleBot(API_KEY)
 server = Flask(__name__)
@@ -32,24 +33,35 @@ server = Flask(__name__)
 EXCESS_FACTOR = 4
 names = ["Abhishek", "Pradeep", "Rj", "Sukrut"]
 excessDistanceMap = {
-    "Abhishek": [2,2],
-    "Pradeep": [3,2],
-    "Rj": [4,2],
-    "Sukrut": [5,2]
+    "Abhishek": [2, 2],
+    "Pradeep": [3, 2],
+    "Rj": [4, 2],
+    "Sukrut": [5, 2]
 }
+usernameMap = {
+    os.getenv("abhishek_username"): "Abhishek",
+    os.getenv("pradeep_username"): "Pradeep",
+    os.getenv("priyan_username"): "Priyan",
+    os.getenv("sukrut_username"): "Sukrut",
+    os.getenv("shantanu_username"): "Shantanu",
+}
+
 
 class DateTime:
     def getDateObj(dateStr):
-        return datetime.fromisoformat(dateStr) 
+        return datetime.fromisoformat(dateStr)
+
 
 class SheetDB():
     def __init__(self):
-        scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(GOOGLE_APP_CREDS)
+        scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
+                 "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            GOOGLE_APP_CREDS)
         client = gspread.authorize(creds)
         self.sheet = client.open("weekly_distance_log").get_worksheet(0)
         self.excess_sheet = client.open("weekly_distance_log").get_worksheet(1)
-    
+
     def getAllRecords(self, sheet):
         data = sheet.get_all_records()
         return data
@@ -64,16 +76,16 @@ class SheetDB():
         global excessDistanceMap
         row = excessDistanceMap[name][0]
         col = excessDistanceMap[name][1]
-        curr_value = self.excess_sheet.cell(row,col).value
-        updated_value = round(float(curr_value)+excess,2)
-        self.excess_sheet.update_cell(row,col,updated_value)
+        curr_value = self.excess_sheet.cell(row, col).value
+        updated_value = round(float(curr_value)+excess, 2)
+        self.excess_sheet.update_cell(row, col, updated_value)
         print('Excess Updated!')
 
     def changeExcess(self, name, excess):
         global excessDistanceMap
         row = excessDistanceMap[name][0]
         col = excessDistanceMap[name][1]
-        self.excess_sheet.update_cell(row,col,excess)
+        self.excess_sheet.update_cell(row, col, excess)
         print('Excess Changed!')
 
     def deleteLastRecord(self):
@@ -83,14 +95,15 @@ class SheetDB():
     def deleteMultipleRecords(self, indexes):
         for i in indexes[::-1]:
             self.sheet.delete_row(i+2)
-        print ('Records Deleted!')
+        print('Records Deleted!')
 
     def filterWeeklyRecords(self):
         data = self.getAllRecords(self.sheet)
         currDate = str(date.today())
         timestampDate = DateTime.getDateObj(currDate)
         lastMonday = timestampDate - timedelta(days=timestampDate.weekday())
-        filtered =  list(filter(lambda x: DateTime.getDateObj(x['Date']) >= lastMonday, data))
+        filtered = list(
+            filter(lambda x: DateTime.getDateObj(x['Date']) >= lastMonday, data))
         return filtered
 
     def getWeeklyIndexesByName(self, name):
@@ -103,7 +116,7 @@ class SheetDB():
             if x['Name'] == name and DateTime.getDateObj(x['Date']) >= lastMonday:
                 indexArr.append(i)
         return indexArr
-    
+
     def getWeeklyStats(self):
         records = self.filterWeeklyRecords()
         progressMap = {}
@@ -113,14 +126,14 @@ class SheetDB():
             for record in curr_records:
                 progressMap[name] += record['Distance']
         return progressMap
-    
+
     def getWeeklyExcessStats(self):
         records = self.getAllRecords(self.excess_sheet)
         excessMap = {}
         for i in records:
             excessMap[i['Name']] = i['Excess']
         return excessMap
-    
+
     def getWeeklyStatsReply(self, progressMap, excessMap):
         table = pt.PrettyTable()
         table.title = "Weekly Progress Status"
@@ -128,20 +141,26 @@ class SheetDB():
         table.align['Name'] = 'l'
         table.align['Mil.'] = 'r'
         table.align['Ex.'] = 'r'
-        sortedProgressMap = {k: v for k, v in sorted(progressMap.items(), key=lambda item: -item[1])}
+        sortedProgressMap = {k: v for k, v in sorted(
+            progressMap.items(), key=lambda item: -item[1])}
         for name in sortedProgressMap:
-            table.add_row([name, f'{sortedProgressMap[name]:.2f}', f'{excessMap[name]:.2f}'])
+            table.add_row(
+                [name, f'{sortedProgressMap[name]:.2f}', f'{excessMap[name]:.2f}'])
         print(table)
         return table
 
-    def roundDown(self,progressMap):
+    def roundDown(self, progressMap):
         for i in progressMap:
-            if progressMap[i] > 10: progressMap[i] = 10
+            if progressMap[i] > 10:
+                progressMap[i] = 10
         return progressMap
+
 
 def sendWeeklyProgress(message, progressMap, excessMap):
     progressReply = sheetdb.getWeeklyStatsReply(progressMap, excessMap)
-    bot.send_message(message.chat.id, f'<pre>{progressReply}</pre>', parse_mode=ParseMode.HTML)
+    bot.send_message(
+        message.chat.id, f'<pre>{progressReply}</pre>', parse_mode=ParseMode.HTML)
+
 
 @bot.message_handler(commands=['progress'])
 def progress(message):
@@ -149,16 +168,19 @@ def progress(message):
     excessMap = sheetdb.getWeeklyExcessStats()
     sendWeeklyProgress(message, progressMap, excessMap)
 
+
 def distance_request(message):
     if message.text:
-        if message.text in ["/log","/log@weekly_distance_tracker_bot"]:
-            bot.send_message(message.chat.id, "Enter distance following /log.\nFor e.g. /log 4.5")
+        if message.text in ["/log", "/log@weekly_distance_tracker_bot"]:
+            bot.send_message(
+                message.chat.id, "Enter distance following /log.\nFor e.g. /log 4.5")
             return False
         request = message.text.split()
-        if len(request)>=2 and request[0] == "/log" and request[1].replace('.','',1).isdigit() and float(request[1])>0:
+        if len(request) >= 2 and request[0] == "/log" and request[1].replace('.', '', 1).isdigit() and float(request[1]) > 0:
             print('Valid distance update request!')
             return True
     return False
+
 
 @bot.message_handler(func=distance_request)
 def distanceReply(message):
@@ -167,30 +189,33 @@ def distanceReply(message):
     distance = message.text.split()[1]
     prevProgressMap = sheetdb.getWeeklyStats()
     prevWeeklyExcessStatusAboveLimit = True if prevProgressMap[name] >= 10 else False
-    
-    sheetdb.insertRecord(name,distance)
-    
+
+    sheetdb.insertRecord(name, distance)
+
     currProgressMap = sheetdb.getWeeklyStats()
 
     currExcess = 0
     if currProgressMap[name] > 10:
         if prevWeeklyExcessStatusAboveLimit:
             currExcess = currProgressMap[name] - prevProgressMap[name]
-        else: 
+        else:
             currExcess = currProgressMap[name] - 10
-            bot.send_message(message.chat.id, "Congrats on achieving your weekly target {} !!! 🥳".format(name))
+            bot.send_message(
+                message.chat.id, "Congrats on achieving your weekly target {} !!! 🥳".format(name))
 
-    if currExcess>0:
-        sheetdb.updateExcess(name,currExcess)
+    if currExcess > 0:
+        sheetdb.updateExcess(name, currExcess)
 
     excessMap = sheetdb.getWeeklyExcessStats()
     sendWeeklyProgress(message, currProgressMap, excessMap)
+
 
 def excess_request(message):
     if message.text and message.text == "/redeem":
         print('Valid redeem request!')
         return True
     return False
+
 
 @bot.message_handler(commands=['redeem'])
 def distanceReply(message):
@@ -203,11 +228,13 @@ def distanceReply(message):
         scaledExcess = requiredDistance*EXCESS_FACTOR
         excessMap = sheetdb.getWeeklyExcessStats()
         if excessMap[name] < scaledExcess:
-            reply = "You have not accumulated sufficient excess mileage {} ! 😭".format(name)
+            reply = "You have not accumulated sufficient excess mileage {} ! 😭".format(
+                name)
         else:
-            sheetdb.insertRecord(name,requiredDistance)
-            sheetdb.updateExcess(name,-1*scaledExcess)
-            reply = "You have successfully redeemed your excess mileage {} ! 👌".format(name)
+            sheetdb.insertRecord(name, requiredDistance)
+            sheetdb.updateExcess(name, -1*scaledExcess)
+            reply = "You have successfully redeemed your excess mileage {} ! 👌".format(
+                name)
 
     bot.send_message(message.chat.id, reply)
 
@@ -215,21 +242,25 @@ def distanceReply(message):
     excessMap = sheetdb.getWeeklyExcessStats()
     sendWeeklyProgress(message, currProgressMap, excessMap)
 
+
 def manual_request(message):
     if message.text:
-        if message.text in ["/manual","/manual@weekly_distance_tracker_bot"]:
-            bot.send_message(message.chat.id, "Enter weekly and excess mileage\nfollowing /manual.\nFor e.g. /manual 9.5 13.2")
+        if message.text in ["/manual", "/manual@weekly_distance_tracker_bot"]:
+            bot.send_message(
+                message.chat.id, "Enter weekly and excess mileage\nfollowing /manual.\nFor e.g. /manual 9.5 13.2")
             return False
         request = message.text.split()
-        if len(request)>=3 and request[0] == "/manual" and request[1].replace('.','',1).isdigit() and float(request[1])>0 and request[2].replace('.','',1).isdigit() and float(request[2])>0:
+        if len(request) >= 3 and request[0] == "/manual" and request[1].replace('.', '', 1).isdigit() and float(request[1]) > 0 and request[2].replace('.', '', 1).isdigit() and float(request[2]) > 0:
             print('Valid manual update request!')
             return True
     return False
 
+
 @bot.message_handler(func=manual_request)
 def manualReply(message):
     name = message.from_user.first_name
-    bot.send_message(message.chat.id, '🚧 Manual update for {} in progress...'.format(name))
+    bot.send_message(
+        message.chat.id, '🚧 Manual update for {} in progress...'.format(name))
 
     # delete weekly records
     weeklyIndexes = sheetdb.getWeeklyIndexesByName(name)
@@ -239,24 +270,31 @@ def manualReply(message):
     req = message.text.split()
     distance = req[1]
     excess = float(req[2])
-    if float(distance) > 0: sheetdb.insertRecord(name, distance)
-    if excess > 0: sheetdb.changeExcess(name, excess)
+    if float(distance) > 0:
+        sheetdb.insertRecord(name, distance)
+    if excess > 0:
+        sheetdb.changeExcess(name, excess)
 
     # return weekly progress
     progressMap = sheetdb.getWeeklyStats()
     excessMap = sheetdb.getWeeklyExcessStats()
     sendWeeklyProgress(message, progressMap, excessMap)
 
+
 @server.route('/' + API_KEY, methods=['POST'])
 def getMessage():
-    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    bot.process_new_updates(
+        [telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
     return "!", 200
+
 
 @server.route("/")
 def webhook():
     bot.remove_webhook()
-    bot.set_webhook(url='https://weekly-distance-tracker-bot.herokuapp.com/' + API_KEY)
+    bot.set_webhook(
+        url='https://weekly-distance-tracker-bot.herokuapp.com/' + API_KEY)
     return "!", 200
+
 
 if __name__ == "__main__":
     sheetdb = SheetDB()
