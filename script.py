@@ -31,14 +31,7 @@ bot = telebot.TeleBot(API_KEY)
 server = Flask(__name__)
 
 EXCESS_FACTOR = 4
-names = ["Abhishek", "Pradeep", "Priyan", "Sukrut", "Shantanu"]
-excessDistanceMap = {
-    "Abhishek": [2, 2],
-    "Pradeep": [3, 2],
-    "Priyan": [4, 2],
-    "Sukrut": [5, 2],
-    "Shantanu": [6, 2]
-}
+
 usernameMap = {
     os.getenv("abhishek_username"): "Abhishek",
     os.getenv("pradeep_username"): "Pradeep",
@@ -46,6 +39,12 @@ usernameMap = {
     os.getenv("sukrut_username"): "Sukrut",
     os.getenv("shantanu_username"): "Shantanu",
 }
+
+excessDistanceMap = {}
+i = 2
+for name in usernameMap.values():
+    excessDistanceMap[name] = [i, 2]
+    i += 1
 
 
 class DateTime:
@@ -121,7 +120,7 @@ class SheetDB():
     def getWeeklyStats(self):
         records = self.filterWeeklyRecords()
         progressMap = {}
-        for name in names:
+        for name in usernameMap.values():
             progressMap[name] = 0
             curr_records = list(filter(lambda x: x['Name'] == name, records))
             for record in curr_records:
