@@ -1,13 +1,10 @@
-from ast import walk
-from unicodedata import category
 import gspread
 import telebot
 import os
 import schedule
 import prettytable as pt
 from oauth2client.service_account import ServiceAccountCredentials
-from pprint import pprint
-from time import time, strptime, sleep
+from time import sleep
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 from flask import Flask, request
@@ -135,15 +132,15 @@ class SheetDB():
         table.title = "All Time Distance Stats"
         if weekly_status:
             table.title = "Weekly Distance Stats"
-        table.field_names = (['Name', 'Run', 'Cycle', 'Walk'])
-        table.align['Name'] = 'l'
+        table.field_names = (['', 'Run', 'Cycl', 'Walk'])
+        table.align[''] = 'l'
         table.align['Run'] = 'r'
-        table.align['Cycle'] = 'r'
+        table.align['Cycl'] = 'r'
         table.align['Walk'] = 'r'
         sortedProgressMap = {k: v for k, v in sorted(
             progressMap.items(), key=lambda item: -(item[1]['run']/categories['run'] + item[1]['cycle']/categories['cycle'] + item[1]['walk']/categories['walk']))}
         for name in sortedProgressMap:
-            row = [name[0:4]]
+            row = [name[0:3]]
             for category in categories.keys():
                 value = progressMap[name][category]
                 row.append(f'{value:.2f}')
@@ -281,7 +278,7 @@ def send_progress():
 
 
 @bot.message_handler(commands=['chat_id'])
-def test(message):
+def chat_id(message):
     bot.send_message(
         message.chat.id, "Chat ID: "+str(message.chat.id))
 
@@ -302,7 +299,9 @@ def webhook():
 
 
 if __name__ == "__main__":
-    schedule.every().saturday.at("18:00").do(saturday_reminder)
-    schedule.every().monday.at("06:00").do(send_progress)
+    schedule.every().saturday.at("02:00").do(saturday_reminder)
+    schedule.every().sunday.at("14:30").do(send_progress)
+    Thread(target=schedule_checker).start()
+
     sheetdb = SheetDB()
     server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
